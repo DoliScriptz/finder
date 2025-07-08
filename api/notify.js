@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   if (usedNonces.has(nonce)) return res.status(403).json({ ok: false, msg: "Nonce reused" });
 
   usedNonces.add(nonce);
-  setTimeout(() => usedNonces.delete(nonce), 5 * 60_1000); // auto clean
+  setTimeout(() => usedNonces.delete(nonce), 5 * 60_1000);
 
   const embed = {
     title: `Found ${rarity} - ${displayName}`,
