@@ -36,14 +36,19 @@ export default async function handler(req, res) {
   setTimeout(() => usedNonces.delete(nonce), 5 * 60 * 1000);
 
   const embed = {
-    title: `✅ Found ${rarity} - ${displayName}`,
-    description: link || "No link",
-    fields: [
-      { name: "Players", value: String(players) },
-      { name: "Nonce", value: nonce }
-    ],
-    timestamp: new Date().toISOString()
-  };
+  title: `Someone Has Found A ${rarity} - ${displayName}!`,
+  description: `[Join Here](${link})`,
+  color: 0x00FF00,
+  fields: [
+    { name: "Found By",          value: LocalPlayer || "Unknown", inline: true },
+    { name: "Players Inside",    value: `${players}`,              inline: true }
+  ],
+  timestamp: new Date().toISOString(),
+  footer: {
+    text: "fern.wtf • Brainrot Notifier",
+    icon_url: "https://fern.wtf/favicon.png"
+  }
+};
 
   const webhook = process.env.WEBHOOK_URL;
   if (!webhook) {
