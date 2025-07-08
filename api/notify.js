@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   ],
   timestamp: new Date().toISOString(),
   footer: {
-    text: "fern.wtf • Brainrot Notifier",
+    text: "Makal Hub • Brainrot Notifier",
     icon_url: "https://fern.wtf/favicon.png"
   }
 };
