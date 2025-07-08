@@ -1,29 +1,42 @@
 let usedNonces = new Set();
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ ok: false });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, msg: "Method not allowed" });
+  }
 
   const { token, rarity, displayName, players, link } = req.body || {};
-  if (!token) return res.status(400).json({ ok: false, msg: "Missing token" });
+  if (!token) {
+    return res.status(400).json({ ok: false, msg: "Missing token" });
+  }
 
-  let raw;
+  let raw = "";
   try {
-    const decoded = Buffer.from(token, 'base64');
-    const decrypted = decoded.map(b => b ^ 123);
-    raw = String.fromCharCode(...decrypted);
-  } catch {
-    return res.status(400).json({ ok: false, msg: "Bad token" });
+    const bytes = [];
+    for (let i = 0; i < token.length; i += 2) {
+      const hex = token.slice(i, i + 2);
+      const b = parseInt(hex, 16) ^ 0xAA;
+      bytes.push(b);
+    }
+    raw = String.fromCharCode(...bytes);
+  } catch (err) {
+    return res.status(400).json({ ok: false, msg: "Invalid HEX token" });
   }
 
   const [secret, nonce] = raw.split(':');
-  if (secret !== "IIkanLeleBro") return res.status(403).json({ ok: false, msg: "Secret mismatch" });
-  if (usedNonces.has(nonce)) return res.status(403).json({ ok: false, msg: "Nonce reused" });
+  if (secret !== "IIkanLeleBro") {
+    return res.status(403).json({ ok: false, msg: "Secret mismatch" });
+  }
+
+  if (!nonce || usedNonces.has(nonce)) {
+    return res.status(403).json({ ok: false, msg: "Nonce reused or missing" });
+  }
 
   usedNonces.add(nonce);
-  setTimeout(() => usedNonces.delete(nonce), 5 * 60_1000);
+  setTimeout(() => usedNonces.delete(nonce), 5 * 60 * 1000);
 
   const embed = {
-    title: `Found ${rarity} - ${displayName}`,
+    title: `✅ Found ${rarity} - ${displayName}`,
     description: link || "No link",
     fields: [
       { name: "Players", value: String(players) },
@@ -32,11 +45,20 @@ export default async function handler(req, res) {
     timestamp: new Date().toISOString()
   };
 
-  await fetch(process.env.WEBHOOK_URL, {
+  const webhook = process.env.WEBHOOK_URL;
+  if (!webhook) {
+    return res.status(500).json({ ok: false, msg: "Missing WEBHOOK_URL env" });
+  }
+
+  const webhookRes = await fetch(webhook, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ embeds: [embed] })
   });
 
-  res.status(200).json({ ok: true });
+  if (!webhookRes.ok) {
+    return res.status(500).json({ ok: false, msg: "Webhook failed" });
+  }
+
+  return res.status(200).json({ ok: true, msg: "Sent to webhook" });
 }
