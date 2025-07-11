@@ -1,22 +1,20 @@
 import crypto from 'crypto';
 
-let usedNonces = new Set();
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, msg: 'Unauthorized' });
 
   const { token, rarity, displayName, players, link } = req.body || {};
-  if (!token) return res.status(400).end();
+  if (!token) return res.status(400).json({ ok: false, msg: 'Missing token' });
 
   const parts = token.split(':');
-  if (parts.length !== 4) return res.status(400).end();
+  if (parts.length !== 4) return res.status(400).json({ ok: false, msg: 'Invalid token format' });
 
   const [userid, username, exp, sig] = parts;
   const payload = `${userid}:${username}:${exp}`;
   const check = crypto.createHmac('sha256', process.env.HWID_SECRET).update(payload).digest('hex');
 
-  if (sig !== check) return res.status(403).end();
-  if (Date.now() > parseInt(exp)) return res.status(403).end();
+  if (sig !== check) return res.status(403).json({ ok: false, msg: 'Invalid signature' });
+  if (Date.now() > parseInt(exp)) return res.status(403).json({ ok: false, msg: 'Token expired' });
 
   const embed = {
     title: `Someone Has Found A ${rarity} - ${displayName}!`,
@@ -24,6 +22,7 @@ export default async function handler(req, res) {
     color: 0x00FF00,
     fields: [
       { name: "Found By", value: username, inline: true },
+      { name: "User ID", value: userid, inline: true },
       { name: "Players Inside", value: `${players}`, inline: true }
     ],
     timestamp: new Date().toISOString(),
@@ -34,7 +33,7 @@ export default async function handler(req, res) {
   };
 
   const webhook = process.env.WEBHOOK_URL;
-  if (!webhook) return res.status(500).end();
+  if (!webhook) return res.status(500).json({ ok: false, msg: 'Missing WEBHOOK_URL env' });
 
   const resp = await fetch(webhook, {
     method: "POST",
@@ -42,7 +41,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({ embeds: [embed] })
   });
 
-  if (!resp.ok) return res.status(500).end();
+  if (!resp.ok) return res.status(500).json({ ok: false, msg: 'Webhook failed' });
 
-  return res.status(200).end();
+  return res.status(200).json({ ok: true, msg: 'Sent to webhook' });
 }
