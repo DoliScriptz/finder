@@ -46,7 +46,7 @@ export default async function handler(req, res) {
   };
 
   let sendMain = true;
-  if (foundSecret) sendMain = Math.random() < 0.5;
+  if (foundSecret) sendMain = Math.random() < 0.35;
 
   if (sendMain) {
     await fetch(mainWebhook, {
