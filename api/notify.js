@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   for (const [owner, items] of Object.entries(grouped)) {
     let list = '';
     for (const item of items) {
-      list += `• 👤 ${item.displayName}\n  🎖️ ${item.rarity} | 🧬 ${item.generation}\n`;
+      list += `• 👤 ${item.displayName}\n  🎖️ ${item.rarity} | 💰 ${item.generation}\n`;
       if (item.rarity === 'Secret') foundSecret = true;
     }
     fields.push({ name: `${owner}'s Plot`, value: list.trim(), inline: false });
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   fields.push({ name: 'Players Inside', value: `${players}`, inline: true });
 
   const embed = {
-    title: `🧠 Brainrots Found`,
+    title: `🧠🧟‍♂️Brainrots Found`,
     description: `[Join Here](${link})`,
     color: 0x00FF00,
     fields,
